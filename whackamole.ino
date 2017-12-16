@@ -9,12 +9,23 @@ float moleHang = 5000;
 //keep track of who's winning
 int badHits = 0;
 int score = 0;
+int roundCount = 0;
+bool badHit = false;
+bool goodHit = false;
+
+//keep track of how long the game has been on
+extern volatile unsigned long timer0_millis;
+unsigned long time = 0;
+unsigned long timeGameStart = 0;
 
 int prevRandom = 0;
 
 //setup all buttons and leds
 void setup()
 {
+  //Serial.begin(9600);
+  //Serial.println("--- Start Serial Monitor SEND_RCVE ---");
+  
   randomSeed(analogRead(0));
   for(int i = 0; i < moles; i++)
   {
@@ -24,12 +35,29 @@ void setup()
   
   pinMode(1, OUTPUT);
   pinMode(0, OUTPUT);
+  
+  while(!digitalRead(7))
+  {
+    startScreen();
+  }
+  
+  setMillis(0);
+  reset();
 }
 
 void loop()
 {
   // way to time how long the led is on
   int count = 0;
+  badHit = false;
+  goodHit = false;
+  
+  time = millis();
+  
+  if(time >= 20000)
+  {
+    gameOver();
+  }
   
   //generate random number
   int random = genRand();
@@ -46,19 +74,18 @@ void loop()
     if(count > whileTime/2)
     {
       //turn on the mole every iteration
-	  digitalWrite(curLed, true);    
+    digitalWrite(curLed, true);    
     
       for(int i = 0; i < moles; i++)
       {
         if(digitalRead(3+i))
         {
+              
+        //check if currect button is true
           if(digitalRead(curButton))
           {
             //increment score
-            score++;
-
-            //speed up game after a successful mole hit
-            moleHang = moleHang * 0.95;
+            goodHit = true;
 
             //shine the green LED
             digitalWrite(1, true);
@@ -69,8 +96,7 @@ void loop()
           }
           else
           {
-            //increment bad hits!
-            badHits++;
+            badHit = true;
 
             //shine the red LED!
             digitalWrite(0, true);
@@ -80,11 +106,7 @@ void loop()
           }
         }  
       }
-  	}
-    
-    //check if currect button is true
-    
-    
+    }
     
     //time in ms per unit of moleHang
     delay(1);
@@ -92,6 +114,12 @@ void loop()
   }
   
   //reset game clear board
+  roundCount++;
+  keepScore();
+  
+  //speed up game after a successful mole hit
+  moleHang = 500 + (moleHang * 0.70);
+
   reset();
 }
 
@@ -121,12 +149,95 @@ int randMoleHang()
 }
 
 //mock function for a gameover scenario
-int gameover()
+int gameOver()
+{
+  //Serial.println(score);
+  //Serial.println(badHits);
+  if(score >= badHits)
+  {
+    while(true)
+    {
+      for(int i = 0; i < moles; i++)
+      {
+        digitalWrite(9+i, true);
+      }
+
+      digitalWrite(0, true);
+      digitalWrite(1, true);
+      
+      delay(1000);
+      
+      for(int i = 0; i < moles; i++)
+      {
+        digitalWrite(9+i, false);
+      }
+
+      digitalWrite(0, false);
+      digitalWrite(1, false);
+      
+      delay(1000);
+    }
+    
+  }
+  else
+  {
+    for(int i = 0; i < moles; i++)
+    {
+      digitalWrite(9+i, true);
+    }
+
+    digitalWrite(0, true);
+    digitalWrite(1, true);
+  }
+  
+}
+
+void startScreen()
 {
   for(int i = 0; i < moles; i++)
   {
     digitalWrite(9+i, true);
   }
   
-  return 0;
+  digitalWrite(0, true);
+  digitalWrite(1, true);
+}
+
+void keepScore()
+{
+  if(badHit == false && goodHit == false)
+  {
+    badHits++;
+    
+    //shine the red LED!
+    digitalWrite(0, true);
+    delay(100);
+  }
+  else if(goodHit == true)
+  {
+    score++;
+    
+    //shine the red LED!
+    digitalWrite(1, true);
+    delay(100);
+  }
+  else
+  {
+    badHits++;
+    
+    //shine the red LED!
+    digitalWrite(0, true);
+    delay(100);
+  }
+}
+
+//Sets the millis value
+//Not my code, taken from https://tomblanch.wordpress.com/2013/07/27/resetting_millis/
+void setMillis(unsigned long new_millis)
+{
+  uint8_t oldSREG = SREG;
+ 
+  cli();
+  timer0_millis = new_millis;
+  SREG = oldSREG;
 }
