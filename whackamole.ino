@@ -10,23 +10,21 @@ float moleHang = 5000;
 int badHits = 0;
 int score = 0;
 int roundCount = 0;
+
+//keep track of good and bad hits
 bool badHit = false;
 bool goodHit = false;
 
 //keep track of how long the game has been on
-extern volatile unsigned long timer0_millis;
+extern volatile unsigned long timer0_millis; //borrowed code, see setMillis()
 unsigned long time = 0;
-unsigned long timeGameStart = 0;
-
-int prevRandom = 0;
 
 //setup all buttons and leds
 void setup()
-{
-  //Serial.begin(9600);
-  //Serial.println("--- Start Serial Monitor SEND_RCVE ---");
-  
+{ 
   randomSeed(analogRead(0));
+  
+  //setup all pins for leds and buttons
   for(int i = 0; i < moles; i++)
   {
     pinMode(9+i, OUTPUT);
@@ -36,11 +34,13 @@ void setup()
   pinMode(1, OUTPUT);
   pinMode(0, OUTPUT);
   
+  //before starting game, listen for the player to initiate game
   while(!digitalRead(7))
   {
     startScreen();
   }
   
+  //reset program clock and all leds
   setMillis(0);
   reset();
 }
@@ -49,11 +49,15 @@ void loop()
 {
   // way to time how long the led is on
   int count = 0;
+  
+  //reset hit toggles
   badHit = false;
   goodHit = false;
   
+  //record current program time
   time = millis();
   
+  //if program has been running for 20 or more seconds, end game!
   if(time >= 20000)
   {
     gameOver();
@@ -84,7 +88,7 @@ void loop()
         //check if currect button is true
           if(digitalRead(curButton))
           {
-            //increment score
+            //toggle good hit to true
             goodHit = true;
 
             //shine the green LED
@@ -96,6 +100,7 @@ void loop()
           }
           else
           {
+            //toggle badhit bit to true
             badHit = true;
 
             //shine the red LED!
@@ -115,6 +120,8 @@ void loop()
   
   //reset game clear board
   roundCount++;
+  
+  //apply score from good/bad toggles
   keepScore();
   
   //speed up game after a successful mole hit
@@ -148,13 +155,13 @@ int randMoleHang()
   return random(500, moleHang);  
 }
 
-//mock function for a gameover scenario
+// function for a gameover scenario
 int gameOver()
 {
-  //Serial.println(score);
-  //Serial.println(badHits);
+  //if player won
   if(score >= badHits)
   {
+    //blink lights forever
     while(true)
     {
       for(int i = 0; i < moles; i++)
@@ -179,7 +186,7 @@ int gameOver()
     }
     
   }
-  else
+  else //else keep lights solid
   {
     for(int i = 0; i < moles; i++)
     {
@@ -192,6 +199,7 @@ int gameOver()
   
 }
 
+//start the game before player clicks button have all lights on
 void startScreen()
 {
   for(int i = 0; i < moles; i++)
@@ -203,10 +211,13 @@ void startScreen()
   digitalWrite(1, true);
 }
 
+//adds score for moles or human
 void keepScore()
 {
+  //if neither bad nor good, player didnt hit a button so it's a bad hit
   if(badHit == false && goodHit == false)
   {
+    //increment bad hit
     badHits++;
     
     //shine the red LED!
@@ -215,14 +226,16 @@ void keepScore()
   }
   else if(goodHit == true)
   {
+    //increment player score
     score++;
     
-    //shine the red LED!
+    //shine the green LED!
     digitalWrite(1, true);
     delay(100);
   }
-  else
+  else //player badHit==true
   {
+    
     badHits++;
     
     //shine the red LED!
