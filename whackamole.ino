@@ -1,3 +1,6 @@
+// WhackAMole.ino created by Samuel Roy
+// CST337
+
 int moles = 5;
 
 int leds[5];
