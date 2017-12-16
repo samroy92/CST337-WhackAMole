@@ -118,7 +118,7 @@ void loop()
   keepScore();
   
   //speed up game after a successful mole hit
-  moleHang = 500 + (moleHang * 0.70);
+  moleHang = 500 + (moleHang * 0.50);
 
   reset();
 }
